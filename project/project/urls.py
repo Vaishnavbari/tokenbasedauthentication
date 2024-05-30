@@ -17,12 +17,14 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from app.views import registration,login,update_user
+from django.views.decorators.csrf import csrf_exempt
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("register",registration.as_view(),name="registration"),
     path("",login.as_view(),name="login_user"),
-    path("update/<int:id>",update_user.as_view(),name="update_user"),
+    path("update/<int:id>",csrf_exempt(update_user.as_view()),name="update_user"),
 
 
 ]

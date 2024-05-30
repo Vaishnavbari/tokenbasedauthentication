@@ -10,7 +10,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.csrf import csrf_exempt
 from .token_authoeization import custom_authentication
-from rest_framework.authentication import TokenAuthentication,SessionAuthentication
+from rest_framework.authentication import TokenAuthentication,SessionAuthentication,BasicAuthentication
 from rest_framework.permissions import IsAuthenticated
 
 
@@ -79,8 +79,8 @@ class login(APIView):
 @method_decorator(csrf_exempt,name="dispatch")
 class update_user(APIView):
 
-    authentication_classes=[SessionAuthentication]
-    permission_classes=[custom_authentication,IsAuthenticated]
+    authentication_classes=[BasicAuthentication]
+    permission_classes=[custom_authentication]
 
         
     def dispatch(self, request, *args, **kwargs):
@@ -88,8 +88,6 @@ class update_user(APIView):
     
     def put(self,request,id):
 
-        # print(request.user)
-        
         if id is not None:
 
             serializer=registration_user(data=request.data,partial=True)
