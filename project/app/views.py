@@ -9,17 +9,14 @@ from rest_framework.response import Response
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.csrf import csrf_exempt
-from .token_authoeization import custom_authentication
+from .token_authoeization import custom_autherization
 from rest_framework.authentication import TokenAuthentication,SessionAuthentication,BasicAuthentication
 from rest_framework.permissions import IsAuthenticated
-
+from django.shortcuts import get_object_or_404
 
 @method_decorator(csrf_exempt,name='post')
 class registration(APIView):
 
-    authentication_classes=[TokenAuthentication]
-
-    
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)
     
@@ -50,11 +47,10 @@ class registration(APIView):
         return Response({"message":"Something went wrong"},status=500)
 
 
-
+# @method_decorator(csrf_exempt,name='post')
 class login(APIView):
-
-    authentication_classes=[TokenAuthentication]
-
+    
+    @csrf_exempt
     def post(self,request):
         
         serializer = login_user(data=request.data)
@@ -79,30 +75,46 @@ class login(APIView):
 @method_decorator(csrf_exempt,name="dispatch")
 class update_user(APIView):
 
-    authentication_classes=[BasicAuthentication]
-    permission_classes=[custom_authentication]
+    authentication_classes=[TokenAuthentication]
+    permission_classes=[IsAuthenticated]
 
-        
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)
     
     def put(self,request,id):
-
+        
         if id is not None:
-
-            serializer=registration_user(data=request.data,partial=True)
-            user=user_registration.objects.filter(id=id).first()
             
-            if serializer.is_valid():
-                user.first_name=serializer.validated_data.get("first_name",user.first_name)
-                user.email=serializer.validated_data.get("email",user.email)
-                if serializer.validated_data.get("password"):
-                   user.password=make_password(serializer.validated_data.get("password"))
-                user.password=user.password
-                user.last_name=serializer.validated_data.get("last_name",user.last_name)
-                user.save()
-                return Response({"message":"user updated sucessfully "},status=200)
+            serializer=registration_user(data=request.data,partial=True)
 
-            return Response(serializer.errors, status=400)
+            user=user_registration.objects.filter(id=id).first()
+            if user == request.user:
+                if serializer.is_valid():
+
+                    if user_registration.objects.filter(username=serializer.validated_data.get("username")).exists():
+                       return Response({"message":"username alleady exist "},status=400)
+                    
+                    elif user_registration.objects.filter(email=serializer.validated_data.get("email")).exists():
+                       return Response({"message":"email alleady exist "},status=400)
+                   
+                    user.first_name=serializer.validated_data.get("first_name",user.first_name)
+                    user.email=serializer.validated_data.get("email",user.email)
+                    user.username=serializer.validated_data.get("username",user.username)
+
+                    if serializer.validated_data.get("password"):
+                        user.password=make_password(serializer.validated_data.get("password"))
+                    user.password=user.password
+                    user.last_name=serializer.validated_data.get("last_name",user.last_name)
+                    user.save()
+                    return Response({"message":"user updated sucessfully "},status=200)
+                
+                else:
+                    return Response(serializer.errors, status=400)
+            else:
+                return Response({"message":"user not found"},status=400)
+        else:
+            return Response({"meassage":"id is not provided"})
+
+       
 
 

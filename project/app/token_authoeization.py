@@ -4,20 +4,33 @@ from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from .models import user_registration
 
-class custom_authentication(BasePermission):
+class custom_autherization(BasePermission):
+
+    def authenticate(self, request):
+    
+        auth_header=request.headers.get("Authorization")
+
+        if not auth_header:
+            return Response({"msg":"please provide authentication token"})
+        
+        token = auth_header.split(' ')[-1]
+
+        user_token=Token.objects.filter(key=token).first()
+        user = user_registration.objects.filter(email=user_token.user.email).first()
+        
+        print(">>>>>>>>>>>>>>",user)
+        if not user:
+            return user is None
+        else:
+            return user
+     
     
     def has_permission(self, request, view):
-        if request.method == 'PUT':
-            auth_header=request.headers.get("Authorization")
-            if not auth_header:
-                return
-            user=Token.objects.filter(key=auth_header).first()
-            if not user:
-                return Response({"msg":"user is not valid"})
-            else:
-                user = user_registration.objects.filter(email=user.user_id.email)
+        user = self.authenticate(request)
+        request.user=user
+        return True
 
-                return user is not None
+       
             
                   
         # return super().has_permission(request, view)
